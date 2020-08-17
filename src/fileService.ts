@@ -19,8 +19,8 @@ function writePrices(week, prices) {
     utils.writeData(prices, path);
 }
 
-function writeBlockRewards(week, blockRewards) {
-    let path = `/${week}/${i}`;
+function writeBlockRewards(week, blockNum, blockRewards) {
+    let path = `/${week}/${blockNum}`;
     utils.writeData(blockRewards, path);
 }
 

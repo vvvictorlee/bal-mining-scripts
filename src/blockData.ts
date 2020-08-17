@@ -1,6 +1,11 @@
-const { getPoolData, addMarketCaps, poolMarketCap } = require('./poolData');
+const {
+    getPoolData,
+    addMarketCaps,
+    poolMarketCap,
+    PoolData,
+} = require('./poolData');
+const { scale } = require('./utils');
 const poolAbi = require('../abi/BPool.json');
-const { bnum, scale } = require('./utils');
 
 async function getRewardsAtBlock(
     web3,
@@ -12,14 +17,14 @@ async function getRewardsAtBlock(
 ) {
     let totalBalancerLiquidity = bnum(0);
 
-    let block = await web3.eth.getBlock(i);
+    let block = await web3.eth.getBlock(blockNum);
 
-    let allPoolData = [];
+    let allPoolData: typeof PoolData[] = [];
     let userPools = {};
     let userLiquidity = {};
     let tokenTotalMarketCaps = {};
 
-    poolProgress.update(0, { task: `Block ${i} Progress` });
+    poolProgress.update(0, { task: `Block ${blockNum} Progress` });
 
     for (const pool of pools) {
         const poolData = await getPoolData(web3, prices, block, pool);

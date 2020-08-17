@@ -1,5 +1,5 @@
 require('dotenv').config();
-const fs = require('fs');
+import fs from 'fs';
 const cliProgress = require('cli-progress');
 const fetch = require('isomorphic-fetch');
 const BigNumber = require('bignumber.js');
@@ -43,8 +43,22 @@ const writeData = (data, path) => {
     }
 };
 
+interface User {
+    id: string;
+}
+
+interface Share {
+    userAddress: User;
+}
+
+interface PoolResult {
+    shareHolders?: any[];
+    shares: Share[];
+    id?: string;
+}
+
 async function fetchAllPools(block) {
-    let poolResults = [];
+    let poolResults: PoolResult[] = [];
     let skip = 0;
     let paginatePools = true;
     while (paginatePools) {
@@ -90,10 +104,9 @@ async function fetchAllPools(block) {
         }
     }
 
-    let finalResults = [];
+    let finalResults: PoolResult[] = [];
 
-    for (i in poolResults) {
-        let pool = poolResults[i];
+    for (let pool of poolResults) {
         pool.shareHolders = pool.shares.map((a) => a.userAddress.id);
         if (pool.shareHolders.length == 1000) {
             let paginateShares = true;
@@ -169,17 +182,15 @@ async function fetchWhitelist() {
     );
 
     let whitelistResponse = await response.json();
-    whitelist = whitelistResponse.homestead;
-
-    return whitelist;
+    return whitelistResponse.homestead;
 }
 
 async function fetchTokenPrices(allTokens, startTime, endTime, priceProgress) {
     let prices = {};
 
-    for (j in allTokens) {
-        const address = allTokens[j]
-            ? web3.utils.toChecksumAddress(allTokens[j])
+    for (let tokenAddress of allTokens) {
+        const address = tokenAddress
+            ? web3.utils.toChecksumAddress(tokenAddress)
             : null;
         const query = `coins/ethereum/contract/${address}/market_chart/range?&vs_currency=usd&from=${startTime}&to=${endTime}`;
 
@@ -193,7 +204,7 @@ async function fetchTokenPrices(allTokens, startTime, endTime, priceProgress) {
         let priceResponse = await response.json();
         prices[address] = priceResponse.prices;
         priceProgress.increment();
-        // Sleep half a second between requests to prevent rate-limiting
+        // Sleep between requests to prevent rate-limiting
         await sleep(1000);
     }
     priceProgress.stop();

@@ -1,7 +1,7 @@
 const poolAbi = require('../abi/BPool.json');
 const tokenAbi = require('../abi/BToken.json');
-const utils = require('./utils');
-const { uncappedTokens } = require('./tokens');
+const { bnum, scale } = require('./utils');
+import { uncappedTokens } from './tokens';
 const BigNumber = require('bignumber.js');
 
 const MARKETCAP_CAP = bnum(10000000);
@@ -19,13 +19,23 @@ BigNumber.config({
     DECIMAL_PLACES: 18,
 });
 
-function bnum(val) {
-    return new BigNumber(val.toString());
+interface PoolData {
+    poolAddress?: string | undefined;
+    tokens?: any[];
+    marketCap?: number;
+    eligibleTotalWeight?: number;
+    ratioFactor?: number;
+    wrapFactor?: number;
+    feeFactor?: number;
+    originalPoolMarketCapFactor?: number;
+    shareHolders?: any[];
+    controller?: string;
 }
 
 async function getPoolData(web3, prices, block, pool) {
-    let poolData = {};
-    poolData.poolAddress = pool.id;
+    let poolData: PoolData = {
+        poolAddress: pool.id,
+    };
 
     // Check if at least two tokens have a price
     let atLeastTwoTokensHavePrice = false;
@@ -66,7 +76,7 @@ async function getPoolData(web3, prices, block, pool) {
     let poolMarketCap = bnum(0);
     let originalPoolMarketCapFactor = bnum(0);
     let eligibleTotalWeight = bnum(0);
-    let poolRatios = [];
+    let poolRatios: any[] = [];
 
     for (const t of currentTokens) {
         // Skip token if it doesn't have a price
@@ -83,9 +93,7 @@ async function getPoolData(web3, prices, block, pool) {
             .getNormalizedWeight(token)
             .call(undefined, block.number);
 
-        eligibleTotalWeight = eligibleTotalWeight.plus(
-            utils.scale(normWeight, -18)
-        );
+        eligibleTotalWeight = eligibleTotalWeight.plus(scale(normWeight, -18));
 
         let closestPrice = prices[token].reduce((a, b) => {
             return Math.abs(b[0] - block.timestamp * 1000) <
@@ -94,14 +102,14 @@ async function getPoolData(web3, prices, block, pool) {
                 : a;
         })[1];
 
-        let tokenBalance = utils.scale(tokenBalanceWei, -tokenDecimals);
+        let tokenBalance = scale(tokenBalanceWei, -tokenDecimals);
         let tokenMarketCap = tokenBalance.times(bnum(closestPrice)).dp(18);
 
         if (poolData.tokens) {
             let obj = {
                 token: t,
                 origMarketCap: tokenMarketCap,
-                normWeight: utils.scale(normWeight, -18),
+                normWeight: scale(normWeight, -18),
             };
             poolData.tokens.push(obj);
         } else {
@@ -109,12 +117,13 @@ async function getPoolData(web3, prices, block, pool) {
                 {
                     token: t,
                     origMarketCap: tokenMarketCap,
-                    normWeight: utils.scale(normWeight, -18),
+                    normWeight: scale(normWeight, -18),
                 },
             ];
         }
 
-        poolRatios.push(utils.scale(normWeight, -18));
+        const scaledPoolRatio = scale(normWeight, -18);
+        poolRatios.push(scaledPoolRatio);
         poolMarketCap = poolMarketCap.plus(tokenMarketCap);
     }
 
@@ -127,7 +136,7 @@ async function getPoolData(web3, prices, block, pool) {
     let poolFee = await bPool.methods
         .getSwapFee()
         .call(undefined, block.number);
-    poolFee = utils.scale(poolFee, -16); // -16 = -18 * 100 since it's in percentage terms
+    poolFee = scale(poolFee, -16); // -16 = -18 * 100 since it's in percentage terms
     let feeFactor = bnum(getFeeFactor(poolFee));
 
     originalPoolMarketCapFactor = feeFactor

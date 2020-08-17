@@ -1,18 +1,8 @@
-const { BAL_TOKEN, uncappedTokens, equivalentSets } = require('./tokens');
-const BigNumber = require('bignumber.js');
+import { BAL_TOKEN, uncappedTokens, equivalentSets } from './tokens';
+const { bnum } = require('./utils');
 
 const WRAP_FACTOR_HARD = 0.1;
 const WRAP_FACTOR_SOFT = 0.2;
-
-BigNumber.config({
-    EXPONENTIAL_AT: [-100, 100],
-    ROUNDING_MODE: BigNumber.ROUND_DOWN,
-    DECIMAL_PLACES: 18,
-});
-
-function bnum(val) {
-    return new BigNumber(val.toString());
-}
 
 function getFeeFactor(feePercentage) {
     return Math.exp(-Math.pow(feePercentage * 0.25, 2));
@@ -38,9 +28,9 @@ function getRatioFactor(tokens, weights) {
     let pairWeightSum = bnum(0);
     let balMultiplier = bnum(2);
     let n = weights.length;
-    for (j = 0; j < n; j++) {
+    for (let j = 0; j < n; j++) {
         if (!weights[j].eq(bnum(0))) {
-            for (k = j + 1; k < n; k++) {
+            for (let k = j + 1; k < n; k++) {
                 let pairWeight = weights[j].times(weights[k]);
                 let normalizedWeight1 = weights[j].div(
                     weights[j].plus(weights[k])
@@ -68,16 +58,14 @@ function getRatioFactor(tokens, weights) {
         }
     }
 
-    ratioFactor = ratioFactorSum.div(pairWeightSum);
-
-    return ratioFactor;
+    return ratioFactorSum.div(pairWeightSum);
 }
 
 function getWrapFactorForPair(tokenA, tokenB) {
     let foundTokenA = false;
     let foundTokenB = false;
-    for (set1 in equivalentSets) {
-        for (set2 in equivalentSets[set1]) {
+    for (let set1 in equivalentSets) {
+        for (let set2 in equivalentSets[set1]) {
             let includesTokenA = equivalentSets[set1][set2].includes(tokenA);
             let includesTokenB = equivalentSets[set1][set2].includes(tokenB);
             if (includesTokenA && includesTokenB) {
@@ -105,9 +93,9 @@ function getWrapFactor(tokens, weights) {
     let wrapFactorSum = bnum(0);
     let pairWeightSum = bnum(0);
     let n = weights.length;
-    for (x = 0; x < n; x++) {
+    for (let x = 0; x < n; x++) {
         if (!weights[x].eq(bnum(0))) {
-            for (y = x + 1; y < n; y++) {
+            for (let y = x + 1; y < n; y++) {
                 let pairWeight = weights[x].times(weights[y]);
                 let wrapFactorPair = getWrapFactorForPair(tokens[x], tokens[y]);
                 wrapFactorSum = wrapFactorSum.plus(
@@ -118,9 +106,7 @@ function getWrapFactor(tokens, weights) {
         }
     }
 
-    wrapFactor = wrapFactorSum.div(pairWeightSum);
-
-    return wrapFactor;
+    return wrapFactorSum.div(pairWeightSum);
 }
 
 module.exports = { getFeeFactor, getBalFactor, getRatioFactor, getWrapFactor };

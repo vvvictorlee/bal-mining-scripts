@@ -102,7 +102,7 @@ const BAL_PER_SNAPSHOT = BAL_PER_WEEK.div(
             prices,
             poolProgress
         );
-        writeBlockRewards(WEEK, blockRewards);
+        writeBlockRewards(WEEK, i, blockRewards);
         blockProgress.increment(BLOCKS_PER_SNAPSHOT);
     }
 
